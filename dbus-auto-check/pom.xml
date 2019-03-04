@@ -17,6 +17,7 @@
         <module>allinone-auto-check</module>
         <module>dbus-canal-auto</module>
         <module>dbus-ogg-auto</module>
+        <module>log-auto-check</module>
     </modules>
 
 </project>

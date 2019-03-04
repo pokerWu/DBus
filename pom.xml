@@ -30,6 +30,7 @@
         <module>dbus-keeper</module>
         <module>encoder-plugins</module>
         <module>dbus-router</module>
+        <module>dbus-auto-check</module>
     </modules>
 
 
