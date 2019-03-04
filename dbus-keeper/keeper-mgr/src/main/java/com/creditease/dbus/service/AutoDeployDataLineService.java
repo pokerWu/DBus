@@ -8,10 +8,13 @@ import com.creditease.dbus.constant.MessageCode;
 import com.creditease.dbus.utils.JsonFormatUtils;
 import com.creditease.dbus.utils.SSHUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -30,6 +33,7 @@ public class AutoDeployDataLineService {
     private IZkService zkService;
     @Autowired
     private Environment env;
+    private final Logger logger = LoggerFactory.getLogger(AutoDeployDataLineService.class);
 
 
     public JSONObject getOggConf(String dsName) throws Exception {
@@ -135,10 +139,22 @@ public class AutoDeployDataLineService {
 
     public void setCanalConf(Map<String, String> map) throws Exception {
         String dsName = map.get("dsName");
-        JSONObject canalConfJson = new JSONObject();
+        JSONObject canalConfJson = null;
+        
         if (zkService.isExists(Constants.CANAL_PROPERTIES_ROOT)) {
-            canalConfJson = JSONObject.parseObject(new String(zkService.getData(Constants.CANAL_PROPERTIES_ROOT), KeeperConstants.UTF8));
+            String strConf =new String(zkService.getData(Constants.CANAL_PROPERTIES_ROOT), KeeperConstants.UTF8);
+            if (!StringUtils.isBlank(strConf))
+                try {
+                    canalConfJson = JSONObject.parseObject(strConf);
+                } catch (Exception e) {
+                    logger.warn("{}", e);
+                }
+        } else {
+            zkService.createNode(Constants.CANAL_PROPERTIES_ROOT, "{}".getBytes(StandardCharsets.UTF_8));
         }
+
+        if (canalConfJson == null) canalConfJson = new JSONObject();
+
         String hosts = canalConfJson.getString(KeeperConstants.HOST);
         String host = map.get(KeeperConstants.HOST);
         if (StringUtils.isNotBlank(hosts) && !hosts.contains(host)) {
