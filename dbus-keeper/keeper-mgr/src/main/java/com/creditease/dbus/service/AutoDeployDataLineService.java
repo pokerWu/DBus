@@ -140,15 +140,14 @@ public class AutoDeployDataLineService {
     public void setCanalConf(Map<String, String> map) throws Exception {
         String dsName = map.get("dsName");
         JSONObject canalConfJson = null;
-        
+
         if (zkService.isExists(Constants.CANAL_PROPERTIES_ROOT)) {
-            String strConf =new String(zkService.getData(Constants.CANAL_PROPERTIES_ROOT), KeeperConstants.UTF8);
-            if (!StringUtils.isBlank(strConf))
-                try {
-                    canalConfJson = JSONObject.parseObject(strConf);
-                } catch (Exception e) {
-                    logger.warn("{}", e);
-                }
+            try {
+                String strConf = new String(zkService.getData(Constants.CANAL_PROPERTIES_ROOT), KeeperConstants.UTF8);
+                canalConfJson = JSONObject.parseObject(strConf);
+            } catch (Exception e) {
+                logger.warn("{}", e);
+            }
         } else {
             zkService.createNode(Constants.CANAL_PROPERTIES_ROOT, "{}".getBytes(StandardCharsets.UTF_8));
         }
