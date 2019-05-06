@@ -10,10 +10,13 @@ import java.io.*;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.text.MessageFormat;
 import java.text.SimpleDateFormat;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.Properties;
 
 import static com.creditease.dbus.canal.utils.FileUtils.writeAndPrint;
 import static com.creditease.dbus.canal.utils.FileUtils.writeProperties;
@@ -142,8 +145,32 @@ public class AutoDeployStart {
         writeAndPrint("************************************ EDIT CANAL.PROPERTIES BEGIN ****************************");
 
         String canalProperties = "canal.properties";
+        String confPath = canalPath + "/conf/" + canalProperties;
         int canalPort = getAvailablePort();
-        writeProperties(canalPath + "/conf/" + canalProperties, "canal.port", "canal.port = " + canalPort);
+
+        Properties canalProp = new Properties();
+        canalProp.load(AutoDeployStart.class.getResourceAsStream(confPath));
+
+        canalProp.setProperty("canal.zkServers", deployProps.getZkPath() + "/DBus/Canal/canal-" + deployProps.getDsName());
+        canalProp.setProperty("canal.destinations", dsName);
+        canalProp.setProperty("canal.port", String.valueOf(canalPort));
+        canalProp.setProperty("canal.metrics.pull.port", String.valueOf(getAvailablePort(Collections.singletonList(canalPort))));
+        canalProp.setProperty("canal.serverMode", "tcp");
+        canalProp.setProperty("canal.auto.scan", "false");
+        canalProp.setProperty("canal.instance.filter.query.dcl", "true");
+        canalProp.setProperty("canal.instance.filter.query.dml", "true");
+        canalProp.setProperty("canal.instance.binlog.format", "ROW");
+        canalProp.setProperty("canal.instance.binlog.image", "FULL");
+        canalProp.setProperty("canal.instance.global.spring.xml", "classpath:spring/default-instance.xml");
+        canalProp.setProperty("canal.destinations", dsName);
+
+        FileOutputStream file = new FileOutputStream(confPath);
+        OutputStreamWriter writer = new OutputStreamWriter(file, StandardCharsets.UTF_8);
+        canalProp.store(writer, "#### " + dsName);
+
+
+
+       /* writeProperties(canalPath + "/conf/" + canalProperties, "canal.port", "canal.port = " + canalPort);
         //canal-1.1.1需要这个参数
         //ArrayList<Integer> ports = new ArrayList<>();
         //ports.add(canalPort);
@@ -160,7 +187,7 @@ public class AutoDeployStart {
         writeProperties(canalPath + "/conf/" + canalProperties, "classpath:spring/file-instance.xml",
                 "#canal.instance.global.spring.xml = classpath:spring/file-instance.xml");
         writeProperties(canalPath + "/conf/" + canalProperties, "classpath:spring/default-instance.xml",
-                "canal.instance.global.spring.xml = classpath:spring/default-instance.xml");
+                "canal.instance.global.spring.xml = classpath:spring/default-instance.xml");*/
         writeAndPrint("********************************** EDIT CANAL.PROPERTIES SUCCESS ****************************");
 
 
@@ -168,14 +195,26 @@ public class AutoDeployStart {
         //checkExist(canalPath, deployProps.getDsName());
         //instance文件编辑
         String instancePropsPath = canalPath + "/conf/" + deployProps.getDsName() + "/" + "instance.properties";
-        writeAndPrint("****************************** UPDATE INSTANCE.PROPERTIES BEGIN *****************************");
+        //writeAndPrint("****************************** UPDATE INSTANCE.PROPERTIES BEGIN *****************************");
 
-        writeAndPrint("instance file path " + instancePropsPath);
+        //writeAndPrint("instance file path " + instancePropsPath);
 
-        writeProperties(instancePropsPath, "canal.instance.master.address", "canal.instance.master.address = " + deployProps.getSlavePath());
-        writeProperties(instancePropsPath, "canal.instance.dbUsername", "canal.instance.dbUsername = " + deployProps.getCanalUser());
-        writeProperties(instancePropsPath, "canal.instance.dbPassword", "canal.instance.dbPassword = " + deployProps.getCanalPwd());
-        writeProperties(instancePropsPath, "canal.instance.connectionCharset", " canal.instance.connectionCharset = UTF-8");
+        Properties instanceProp = new Properties();
+        instanceProp.load(AutoDeployStart.class.getResourceAsStream(instancePropsPath));
+
+        instanceProp.setProperty("canal.instance.master.address", deployProps.getSlavePath());
+        instanceProp.setProperty("canal.instance.dbUsername", deployProps.getCanalUser());
+        instanceProp.setProperty("canal.instance.dbPassword", deployProps.getCanalPwd());
+        instanceProp.setProperty("canal.instance.connectionCharset", "UTF-8");
+
+        FileOutputStream instanceFile = new FileOutputStream(instancePropsPath);
+        instanceProp.store(new OutputStreamWriter(instanceFile, StandardCharsets.UTF_8), "### instance properties" + dsName);
+
+
+       // writeProperties(instancePropsPath, "canal.instance.master.address", "canal.instance.master.address = " + deployProps.getSlavePath());
+        //writeProperties(instancePropsPath, "canal.instance.dbUsername", "canal.instance.dbUsername = " + deployProps.getCanalUser());
+        //writeProperties(instancePropsPath, "canal.instance.dbPassword", "canal.instance.dbPassword = " + deployProps.getCanalPwd());
+        //writeProperties(instancePropsPath, "canal.instance.connectionCharset", " canal.instance.connectionCharset = UTF-8");
         writeAndPrint("***************************** UPDATE INSTANCE.PROPERTIES SUCCESS ****************************");
 
     }
